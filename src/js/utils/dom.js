@@ -182,6 +182,48 @@ export function createEl(tagName = 'div', properties = {}, attributes = {}, cont
 }
 
 /**
+ * Determines if a control is visible to the user
+ *
+ * @param {HTMLElement} control - The control whose visibility is being checked
+ * @return {boolean} - True if the control is visible
+ */
+export function isVisible(control) {
+  if (!control) {
+    return false;
+  }
+
+  // Using `includes` below to catch cases where `!important` is used in the style
+  return !computedStyle(control, 'display').includes('none') && !computedStyle(control, 'visibility').includes('hidden');
+}
+
+/**
+ * Determines if a control can receive focus
+ *
+ * @param {HTMLElement} control - The control that may be focusable
+ * @return {boolean} - True if the control can receive focus
+ */
+export function isFocusable(control) {
+  if (!control || control.getAttribute('tabindex') === '-1' || !isVisible(control)) {
+    return false;
+  }
+
+  return (
+    ((control instanceof window.HTMLAnchorElement || control instanceof window.HTMLAreaElement) &&
+      (control.hasAttribute('href') && !control.hasAttribute('hidden'))) ||
+    ((control instanceof window.HTMLInputElement ||
+      control instanceof window.HTMLSelectElement ||
+      control instanceof window.HTMLTextAreaElement ||
+      control instanceof window.HTMLButtonElement) &&
+      !control.hasAttribute('disabled')) ||
+    control instanceof window.HTMLIFrameElement ||
+    control instanceof window.HTMLObjectElement ||
+    control instanceof window.HTMLEmbedElement ||
+    control.hasAttribute('tabindex') ||
+    control.hasAttribute('contenteditable')
+  );
+}
+
+/**
  * Injects text into an element, replacing any existing contents entirely.
  *
  * @param  {Element} el

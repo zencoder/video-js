@@ -2200,6 +2200,91 @@ class Player extends Component {
   }
 
   /**
+   * Given a parent control, finds the first focusable child control
+   *
+   * @param {HTMLElement} parent - The control in which we'll search
+   * @return {HTMLElement | null} - Returns the first focusable control in the node list or null if not focusable control is found
+   */
+  getFirstFocusableControl_(parent) {
+    // Parent has no children, and the parent itself is not focusable, nothing to return
+    if (!parent || typeof parent.el !== 'function' || (!Dom.isFocusable(parent.el()) && !parent.children().length)) {
+      return null;
+    }
+
+    if (Dom.isFocusable(parent.el())) {
+      return parent.el();
+    }
+
+    const children = parent.children();
+    let focusableEl;
+
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+
+      focusableEl = this.getFirstFocusableControl_(child);
+
+      if (focusableEl) {
+        break;
+      }
+    }
+
+    return focusableEl;
+  }
+
+  /**
+   * Given a parent control, finds the last focusable child control
+   *
+   * @param {HTMLElement} parent - The control in which we'll search
+   * @return {HTMLElement | null} - Returns the last focusable control in the node list or null if not focusable control is found
+   */
+  getLastFocusableControl_(parent) {
+    // Parent has no children, and the parent itself is not focusable, nothing to return
+    if (!parent || typeof parent.el !== 'function' || !Dom.isVisible(parent.el())) {
+      return null;
+    }
+
+    if (Dom.isFocusable(parent.el())) {
+      return parent.el();
+    }
+
+    const children = parent.children();
+    let focusableEl;
+
+    for (let i = children.length; i >= 0; i--) {
+      const child = children[i];
+
+      focusableEl = this.getLastFocusableControl_(child);
+
+      if (focusableEl) {
+        break;
+      }
+    }
+
+    return focusableEl;
+  }
+
+  trapFullscreenTab_(event) {
+    if (!this._firstFocusableControl || !this._lastFocusableControl) {
+      return;
+    }
+
+    const focusedEl = document.activeElement;
+    let elToFocus;
+
+    if (event.shiftKey) {
+      if (focusedEl === this._firstFocusableControl) {
+        elToFocus = this._lastFocusableControl;
+      }
+    } else if (focusedEl === this._lastFocusableControl) {
+      elToFocus = this._firstFocusableControl;
+    }
+    if (elToFocus && typeof elToFocus.focus === 'function') {
+      elToFocus.focus();
+      event.preventDefault();
+    }
+  }
+
+  /**
    * Pass values to the playback tech
    *
    * @param {string} [method]
@@ -2789,6 +2874,9 @@ class Player extends Component {
   requestFullscreen(fullscreenOptions) {
     const PromiseClass = this.options_.Promise || window.Promise;
 
+    this._firstFocusableControl = this.getFirstFocusableControl_(this);
+    this._lastFocusableControl = this.getLastFocusableControl_(this);
+
     if (PromiseClass) {
       const self = this;
 
@@ -3081,6 +3169,10 @@ class Player extends Component {
    */
   handleKeyDown(event) {
     const {userActions} = this.options_;
+
+    if (this.isFullscreen() && keycode.isEventKey(event, 'Tab')) {
+      this.trapFullscreenTab_(event);
+    }
 
     // Bail out if hotkeys are not configured.
     if (!userActions || !userActions.hotkeys) {
