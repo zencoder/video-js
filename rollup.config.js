@@ -84,11 +84,7 @@ const moduleExternals = [
   '@videojs/xhr',
   'safe-json-parse',
   'videojs-vtt.js',
-  'url-toolkit',
-  'm3u8-parser',
-  'mpd-parser',
-  'mux.js',
-  'aes-decrypter',
+  '@videojs/http-streaming',
   'keycode',
   '@babel/runtime'
 ];
